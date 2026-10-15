@@ -67,7 +67,7 @@ export const HeroSection: React.FC = () => {
   }, []);
 
   return (
-    <section className="relative w-screen h-screen overflow-hidden bg-black text-[#E8DFD8] font-sans selection:bg-[#cbb59d] selection:text-black cursor-none">
+    <section className="relative w-screen min-h-screen md:h-screen overflow-x-hidden md:overflow-hidden bg-black text-[#E8DFD8] font-sans selection:bg-[#cbb59d] selection:text-black cursor-none">
       {/* ================= 1. MINIMAL CUSTOM CURSOR ================= */}
       {cursorPos.x >= 0 && (
         <motion.div
@@ -126,7 +126,7 @@ export const HeroSection: React.FC = () => {
       </div>
 
       {/* ================= 4. CONTENT LAYER ================= */}
-      <div className="relative z-10 flex flex-col justify-start md:justify-between h-full w-full px-6 sm:px-12 lg:px-16 pt-6 pb-8 pointer-events-none">
+      <div className="relative z-10 flex flex-col justify-start md:justify-between min-h-screen md:h-full w-full px-6 sm:px-12 lg:px-16 pt-6 pb-12 md:pb-8 pointer-events-none">
 
         {/* Navigation Bar */}
         <header className="relative flex items-center justify-between w-full pointer-events-auto">
@@ -227,7 +227,7 @@ export const HeroSection: React.FC = () => {
             className="max-w-sm sm:max-w-md md:max-w-lg lg:max-w-[42rem] xl:max-w-[46rem] pointer-events-auto z-20"
           >
             {/* Availability Pill Badge */}
-            <motion.div variants={fadeUpVariants} className="mb-4 sm:mb-5 pt-4 sm:pt-5 md:pt-0">
+            <motion.div variants={fadeUpVariants} className="mb-3 sm:mb-5 pt-1 sm:pt-5 md:pt-0">
               <div
                 className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-full border border-[#8C6D4F]/50 bg-[#14100D]/85 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.6)] max-w-full"
                 style={{ fontFamily: "'Montserrat', sans-serif" }}
@@ -243,8 +243,8 @@ export const HeroSection: React.FC = () => {
             </motion.div>
 
             {/* Mobile-only Profile Image */}
-            <motion.div variants={fadeUpVariants} className="md:hidden mb-5 flex justify-center">
-              <div className="relative w-64 h-64 sm:w-72 sm:h-72">
+            <motion.div variants={fadeUpVariants} className="md:hidden mb-4 sm:mb-5 flex justify-center">
+              <div className="relative w-52 h-52 sm:w-72 sm:h-72">
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#D4AF37]/30 via-[#8C6D4F]/20 to-transparent blur-md" />
                 <img
                   src={portfolioImg}
@@ -270,7 +270,7 @@ export const HeroSection: React.FC = () => {
             </motion.div>
 
             {/* Subtitle Role with Animated Changing Motion */}
-            <motion.div variants={fadeUpVariants} className="mb-4 sm:mb-5">
+            <motion.div variants={fadeUpVariants} className="mb-3 sm:mb-5">
               <div className="min-h-[2.2rem] sm:min-h-[2.5rem] md:min-h-[2.8rem] flex items-center">
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -293,7 +293,7 @@ export const HeroSection: React.FC = () => {
             {/* Description */}
             <motion.div
               variants={fadeUpVariants}
-              className="text-xs sm:text-sm md:text-[14.5px] font-normal text-[#C4B5A5] leading-[1.75] tracking-normal max-w-xl mb-6 sm:mb-8"
+              className="text-xs sm:text-sm md:text-[14.5px] font-normal text-[#C4B5A5] leading-[1.75] tracking-normal max-w-xl mb-4 sm:mb-8"
               style={{ fontFamily: "'Montserrat', sans-serif" }}
             >
               <p>
@@ -304,7 +304,7 @@ export const HeroSection: React.FC = () => {
             {/* CTA Buttons */}
             <motion.div
               variants={fadeUpVariants}
-              className="flex flex-row items-center gap-3 sm:gap-6 flex-wrap"
+              className="flex flex-row items-center gap-2.5 sm:gap-6 flex-wrap"
               style={{ fontFamily: "'Montserrat', sans-serif" }}
             >
               {/* Explore My Work CTA */}
@@ -313,7 +313,7 @@ export const HeroSection: React.FC = () => {
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 whileHover={{ scale: 1.02 }}
-                className="relative inline-flex items-center space-x-2 sm:space-x-3 px-4 sm:px-7 py-3 sm:py-3.5 border border-[#8C6D4F] bg-[#120F0C]/80 hover:border-[#D4AF37] text-[#EAD8C7] hover:text-[#FFF5EB] text-[10px] sm:text-[11px] font-medium tracking-[0.2em] sm:tracking-[0.24em] uppercase transition-all duration-300 shadow-[0_0_25px_rgba(212,175,55,0.18)]"
+                className="relative inline-flex items-center space-x-1.5 sm:space-x-3 px-3.5 sm:px-7 py-2.5 sm:py-3.5 border border-[#8C6D4F] bg-[#120F0C]/80 hover:border-[#D4AF37] text-[#EAD8C7] hover:text-[#FFF5EB] text-[9.5px] sm:text-[11px] font-medium tracking-[0.16em] sm:tracking-[0.24em] uppercase transition-all duration-300 shadow-[0_0_25px_rgba(212,175,55,0.18)]"
               >
                 <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#E8D7C5]/40 to-transparent pointer-events-none" />
                 <span>EXPLORE MY WORK</span>
@@ -331,7 +331,7 @@ export const HeroSection: React.FC = () => {
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 whileHover={{ scale: 1.02 }}
-                className="relative inline-flex items-center space-x-1.5 sm:space-x-2 px-4 sm:px-7 py-3 sm:py-3.5 border border-[#8C6D4F]/40 hover:border-[#8C6D4F] text-[#BFA895] hover:text-[#EAD8C7] text-[10px] sm:text-[11px] font-medium tracking-[0.2em] sm:tracking-[0.24em] uppercase transition-all duration-300"
+                className="relative inline-flex items-center space-x-1 sm:space-x-2 px-3.5 sm:px-7 py-2.5 sm:py-3.5 border border-[#8C6D4F]/40 hover:border-[#8C6D4F] text-[#BFA895] hover:text-[#EAD8C7] text-[9.5px] sm:text-[11px] font-medium tracking-[0.16em] sm:tracking-[0.24em] uppercase transition-all duration-300"
               >
                 <span>DOWNLOAD RESUME</span>
                 <span className="transform transition-transform duration-300 group-hover:translate-y-0.5 text-xs">
