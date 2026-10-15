@@ -50,8 +50,12 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
   const lenisRef = useRef<Lenis | null>(null);
   const cardsRef = useRef<HTMLElement[]>([]);
   const initialTopsRef = useRef<number[]>([]);
-  const lastTransformsRef = useRef(new Map());
   const isUpdatingRef = useRef(false);
+
+  const containerHeightRef = useRef(typeof window !== 'undefined' ? window.innerHeight : 800);
+  const lastWidthRef = useRef(typeof window !== 'undefined' ? window.innerWidth : 0);
+  const isMobileModeRef = useRef(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  const cleanupLenisRef = useRef<(() => void) | null>(null);
 
   const calculateProgress = useCallback((scrollTop: number, start: number, end: number) => {
     if (scrollTop < start) return 0;
@@ -87,6 +91,10 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
     const scroller = scrollerRef.current;
     if (!scroller || !cardsRef.current.length) return;
 
+    if (typeof window !== 'undefined') {
+      containerHeightRef.current = window.innerHeight;
+    }
+
     const scrollerRect = scroller.getBoundingClientRect();
     const currentScrollY = window.scrollY || window.pageYOffset || 0;
     const containerTop = scrollerRect.top + currentScrollY;
@@ -110,10 +118,15 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
 
     isUpdatingRef.current = true;
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const scrollTop = currentScrollTop !== undefined
       ? currentScrollTop
       : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
-    const containerHeight = window.innerHeight || 800;
+
+    // On mobile, use stable container height to avoid address-bar collapse jitter
+    const containerHeight = isMobile
+      ? (containerHeightRef.current || window.innerHeight || 800)
+      : (window.innerHeight || 800);
 
     const stackPositionPx = parsePercentage(stackPosition, containerHeight);
     const scaleEndPositionPx = parsePercentage(scaleEndPosition, containerHeight);
@@ -211,44 +224,86 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
   const setupLenis = useCallback(() => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
-    const lenis = new Lenis({
-      duration: 1.0,
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: isMobile ? 1 : 2,
-      infinite: false,
-    });
+    let lenis: Lenis | null = null;
+    let onMobileScroll: (() => void) | null = null;
 
-    lenisRef.current = lenis;
+    if (isMobile) {
+      // Mobile View:
+      // Touch devices have native hardware-accelerated momentum scrolling.
+      // Driving card transforms directly from window.scrollY on native scroll events
+      // guarantees 100% lockstep synchronization between pinned and unpinned cards,
+      // completely eliminating vibration/shaking while preserving the exact card-deck scaling animation style!
+      onMobileScroll = () => {
+        updateCardTransforms(window.scrollY);
+      };
 
-    // Direct synchronous lockstep RAF loop:
-    // Both Lenis scroll and card transforms update in the exact same frame with zero delay!
-    const raf = (time: number) => {
-      lenis.raf(time);
-      updateCardTransforms(lenis.scroll);
+      window.addEventListener('scroll', onMobileScroll, { passive: true });
+      window.addEventListener('touchmove', onMobileScroll, { passive: true });
+
+      // Immediate synchronous initial sync
+      updateCardTransforms(window.scrollY);
+    } else {
+      // Desktop View:
+      // Keep the exact same Lenis smooth scrolling and RAF loop untouched!
+      lenis = new Lenis({
+        duration: 1.0,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        touchMultiplier: 2,
+        infinite: false,
+      });
+
+      lenisRef.current = lenis;
+
+      const raf = (time: number) => {
+        lenis?.raf(time);
+        updateCardTransforms(lenis?.scroll);
+        animationFrameRef.current = requestAnimationFrame(raf);
+      };
       animationFrameRef.current = requestAnimationFrame(raf);
+    }
+
+    return () => {
+      if (onMobileScroll) {
+        window.removeEventListener('scroll', onMobileScroll);
+        window.removeEventListener('touchmove', onMobileScroll);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      if (lenis) {
+        lenis.destroy();
+        lenisRef.current = null;
+      }
     };
-    animationFrameRef.current = requestAnimationFrame(raf);
-
-    return lenis;
   }, [updateCardTransforms]);
-
-  const lastWidthRef = useRef(typeof window !== 'undefined' ? window.innerWidth : 0);
 
   const handleResize = useCallback(() => {
     const currentWidth = window.innerWidth;
+    const isMobile = currentWidth < 768;
     const widthChanged = Math.abs(currentWidth - lastWidthRef.current) > 10;
+    const modeChanged = isMobile !== isMobileModeRef.current;
 
-    // Only recalculate initial tops if screen width actually changed,
-    // ignoring vertical height changes caused by mobile address bar collapse
     if (widthChanged) {
       lastWidthRef.current = currentWidth;
       updateInitialTops();
     }
-    const currentScroll = lenisRef.current ? lenisRef.current.scroll : window.scrollY;
+
+    if (modeChanged) {
+      isMobileModeRef.current = isMobile;
+      if (cleanupLenisRef.current) {
+        cleanupLenisRef.current();
+      }
+      cleanupLenisRef.current = setupLenis();
+    }
+
+    const currentScroll = isMobile
+      ? window.scrollY
+      : (lenisRef.current ? lenisRef.current.scroll : window.scrollY);
     updateCardTransforms(currentScroll);
-  }, [updateInitialTops, updateCardTransforms]);
+  }, [updateInitialTops, updateCardTransforms, setupLenis]);
 
   useLayoutEffect(() => {
     const cards = Array.from(
@@ -269,17 +324,15 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
 
     updateInitialTops();
 
-    setupLenis();
+    cleanupLenisRef.current = setupLenis();
 
     window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (lenisRef.current) {
-        lenisRef.current.destroy();
+      if (cleanupLenisRef.current) {
+        cleanupLenisRef.current();
+        cleanupLenisRef.current = null;
       }
       stackCompletedRef.current = false;
       cardsRef.current = [];
